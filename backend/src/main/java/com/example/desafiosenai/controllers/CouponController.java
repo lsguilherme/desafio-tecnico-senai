@@ -3,7 +3,7 @@ package com.example.desafiosenai.controllers;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping(value = "coupons")
+@RequestMapping("coupons")
 public class CouponController {
 
     @GetMapping

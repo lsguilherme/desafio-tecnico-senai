@@ -3,7 +3,7 @@
     import org.springframework.web.bind.annotation.*;
 
     @RestController
-    @RequestMapping(value = "products")
+    @RequestMapping("products")
     public class ProductController {
 
         @GetMapping
