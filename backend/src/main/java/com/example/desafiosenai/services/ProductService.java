@@ -4,10 +4,8 @@ import com.example.desafiosenai.dtos.requests.ProductRequestDto;
 import com.example.desafiosenai.dtos.responses.ProductResponseDto;
 import com.example.desafiosenai.entities.ProductEntity;
 import com.example.desafiosenai.repositories.ProductRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 
 @Service
 public class ProductService {
@@ -38,11 +36,10 @@ public class ProductService {
     public void deleteProductById(Integer id) {
         ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
 
-        int affectedRows = productRepository.softDeleteById(id, LocalDateTime.now());
 
-        if (affectedRows == 0){
-            throw new RuntimeException("Falha ao deletar produto.");
-        }
+        product.softDelete();
+
+        productRepository.save(product);
     }
 
     public ProductResponseDto restoreProductById(Integer id) {
