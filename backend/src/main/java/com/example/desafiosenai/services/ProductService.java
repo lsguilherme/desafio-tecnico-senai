@@ -4,6 +4,7 @@ import com.example.desafiosenai.dtos.requests.ProductRequestDto;
 import com.example.desafiosenai.dtos.responses.ProductResponseDto;
 import com.example.desafiosenai.entities.ProductEntity;
 import com.example.desafiosenai.repositories.ProductRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -42,5 +43,17 @@ public class ProductService {
         if (affectedRows == 0){
             throw new RuntimeException("Falha ao deletar produto.");
         }
+    }
+
+    public ProductResponseDto restoreProductById(Integer id) {
+        ProductEntity product = productRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+
+        if (product.getDeletedAt() == null){
+            throw new IllegalArgumentException("Produto já está ativo.");
+        }
+
+        product.restore();
+
+        return productRepository.save(product).toDto();
     }
 }

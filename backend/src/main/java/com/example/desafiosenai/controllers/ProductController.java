@@ -4,6 +4,7 @@ import com.example.desafiosenai.dtos.requests.ProductRequestDto;
 import com.example.desafiosenai.dtos.responses.ProductResponseDto;
 import com.example.desafiosenai.services.ProductService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,7 +47,9 @@ public class ProductController {
     }
 
     @PostMapping("{id}/restore")
-    public void restoreProduct(@PathVariable Integer id) {
+    public ResponseEntity<Object> restoreProduct(@PathVariable Integer id) {
+        ProductResponseDto product = productService.restoreProductById(id);
+        return ResponseEntity.ok(product);
     }
 
     @PostMapping("{id}/discount/percent")
