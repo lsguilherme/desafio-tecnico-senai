@@ -1,5 +1,6 @@
 package com.example.desafiosenai.entities;
 
+import com.example.desafiosenai.dtos.responses.ProductResponseDto;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -7,7 +8,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "products")
-public class ProductEntity extends AbstractBaseEntity{
+public class ProductEntity extends AbstractBaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -76,5 +77,18 @@ public class ProductEntity extends AbstractBaseEntity{
 
     public void setStock(Integer stock) {
         this.stock = stock;
+    }
+
+    public ProductResponseDto toDto() {
+        return new ProductResponseDto(
+                this.id,
+                this.name,
+                this.description,
+                this.stock,
+                this.price,
+                this.getCreatedAt(),
+                this.getUpdatedAt(),
+                this.getDeletedAt()
+        );
     }
 }
