@@ -6,6 +6,8 @@ import com.example.desafiosenai.entities.ProductEntity;
 import com.example.desafiosenai.repositories.ProductRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 public class ProductService {
     private final ProductRepository productRepository;
@@ -30,5 +32,15 @@ public class ProductService {
         var savedProduct = productRepository.save(product);
         return savedProduct.toDto();
 
+    }
+
+    public void deleteProductById(Integer id) {
+        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+
+        int affectedRows = productRepository.softDeleteById(id, LocalDateTime.now());
+
+        if (affectedRows == 0){
+            throw new RuntimeException("Falha ao deletar produto.");
+        }
     }
 }

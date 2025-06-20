@@ -40,7 +40,9 @@ public class ProductController {
     }
 
     @DeleteMapping("{id}")
-    public void deleteProduct(@PathVariable Integer id) {
+    public ResponseEntity<Void> deleteProduct(@PathVariable Integer id) {
+        productService.deleteProductById(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("{id}/restore")
