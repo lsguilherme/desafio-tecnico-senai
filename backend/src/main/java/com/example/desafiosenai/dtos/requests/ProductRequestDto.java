@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 public record ProductRequestDto(
         @NotBlank(message = "O nome não pode estar em branco.")
         @Size(min = 3, max = 100, message = "O nome deve ter entre 3 e 100 caracteres.")
-                @Pattern(regexp = "^[a-zA-Z0-9\\s\\-_,.]+$", message = "O nome contém caracteres inválidos.")
+        @Pattern(regexp = "^[a-zA-ZÀ-ÿ0-9\\s\\-_,.]+$", message = "O nome contém caracteres inválidos.")
         String name,
 
         @Size(max = 300, message = "A descrição deve ter até 300 caracteres.")

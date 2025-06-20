@@ -14,9 +14,15 @@ public class ProductService {
         this.productRepository = productRepository;
     }
 
-    public ProductResponseDto saveProduct( ProductRequestDto productRequestDto) {
+    public ProductResponseDto saveProduct(ProductRequestDto productRequestDto) {
+        String normalizedName = productRequestDto.name().replaceAll("\\s+", " ").trim();
+
+        if (productRepository.findByName(normalizedName).isPresent()){
+            throw new IllegalArgumentException("Já existe um produto com esse nome.");
+        };
+
         ProductEntity product = new ProductEntity();
-        product.setName(productRequestDto.name());
+        product.setName(normalizedName);
         product.setDescription(productRequestDto.description());
         product.setStock(productRequestDto.stock());
         product.setPrice(productRequestDto.price());

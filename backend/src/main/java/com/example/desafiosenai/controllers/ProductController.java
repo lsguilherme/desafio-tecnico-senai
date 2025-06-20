@@ -4,9 +4,10 @@ import com.example.desafiosenai.dtos.requests.ProductRequestDto;
 import com.example.desafiosenai.dtos.responses.ProductResponseDto;
 import com.example.desafiosenai.services.ProductService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
 
 
 @RestController
@@ -28,8 +29,10 @@ public class ProductController {
     }
 
     @PostMapping
-    public ResponseEntity<ProductResponseDto> saveProduct(@Valid @RequestBody ProductRequestDto productRequestDto) {
-        return ResponseEntity.status(HttpStatus.OK).body(productService.saveProduct(productRequestDto));
+    public ResponseEntity<Void> saveProduct(@Valid @RequestBody ProductRequestDto productRequestDto) {
+        ProductResponseDto productResponse = productService.saveProduct(productRequestDto);
+        URI location = URI.create("/products/" + productResponse.id());
+        return ResponseEntity.created(location).build();
     }
 
     @PatchMapping("{id}")
