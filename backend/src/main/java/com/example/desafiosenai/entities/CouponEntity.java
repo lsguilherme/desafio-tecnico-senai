@@ -1,5 +1,7 @@
 package com.example.desafiosenai.entities;
 
+import com.example.desafiosenai.dtos.responses.CouponResponseDto;
+import com.example.desafiosenai.dtos.responses.ProductResponseDto;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -26,7 +28,6 @@ public class CouponEntity extends AbstractBaseEntity {
     @Column(nullable = false)
     private Boolean oneShot;
 
-    @Column(nullable = false)
     private Integer maxUses;
 
     @Column(nullable = false)
@@ -113,5 +114,28 @@ public class CouponEntity extends AbstractBaseEntity {
 
     public void setValidUntil(LocalDateTime validUntil) {
         this.validUntil = validUntil;
+    }
+
+    public List<ProductCouponApplicationEntity> getApplications() {
+        return applications;
+    }
+
+    public void setApplications(List<ProductCouponApplicationEntity> applications) {
+        this.applications = applications;
+    }
+
+    public CouponResponseDto toDto() {
+        return new CouponResponseDto(
+                this.id,
+                this.code,
+                this.type,
+                this.discountValue,
+                this.oneShot,
+                this.validFrom,
+                this.validUntil,
+                this.getCreatedAt(),
+                this.getUpdatedAt(),
+                this.getDeletedAt()
+        );
     }
 }

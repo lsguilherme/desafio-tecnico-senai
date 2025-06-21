@@ -79,6 +79,14 @@ public class ProductEntity extends AbstractBaseEntity {
         this.stock = stock;
     }
 
+    public List<ProductCouponApplicationEntity> getProductCouponApplications() {
+        return productCouponApplications;
+    }
+
+    public void setProductCouponApplications(List<ProductCouponApplicationEntity> productCouponApplications) {
+        this.productCouponApplications = productCouponApplications;
+    }
+
     public ProductResponseDto toDto() {
         return new ProductResponseDto(
                 this.id,
