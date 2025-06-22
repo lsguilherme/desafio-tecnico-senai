@@ -36,7 +36,6 @@ public class ProductService {
     public void deleteProductById(Integer id) {
         ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
 
-
         product.softDelete();
 
         productRepository.save(product);
@@ -52,5 +51,9 @@ public class ProductService {
         product.restore();
 
         return productRepository.save(product).toDto();
+    }
+
+    public ProductResponseDto findProductById(Integer id) {
+        return productRepository.findById(id).map(ProductEntity::toDto).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
     }
 }

@@ -26,7 +26,9 @@ public class ProductController {
     }
 
     @GetMapping("{id}")
-    public void findProductById(@PathVariable Integer id) {
+    public ResponseEntity<ProductResponseDto> findProductById(@PathVariable Integer id) {
+        ProductResponseDto product = productService.findProductById(id);
+        return ResponseEntity.ok(product);
     }
 
     @PostMapping
@@ -47,7 +49,7 @@ public class ProductController {
     }
 
     @PostMapping("{id}/restore")
-    public ResponseEntity<Object> restoreProduct(@PathVariable Integer id) {
+    public ResponseEntity<ProductResponseDto> restoreProduct(@PathVariable Integer id) {
         ProductResponseDto product = productService.restoreProductById(id);
         return ResponseEntity.ok(product);
     }
