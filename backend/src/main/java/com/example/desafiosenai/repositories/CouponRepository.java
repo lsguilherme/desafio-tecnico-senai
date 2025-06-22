@@ -12,4 +12,6 @@ public interface CouponRepository extends JpaRepository<CouponEntity, Integer> {
     boolean existsByCode(String normalizedCode);
 
     Optional<CouponEntity> findByCode(String normalized);
+
+    Optional<CouponEntity> findByCodeAndDeletedAtIsNull(String code);
 }

@@ -49,6 +49,14 @@ public class CouponService {
                 .orElseThrow(() -> new IllegalArgumentException("Cupom não encontrado"));
     }
 
+    public void deleteCouponByCode(String code) {
+        CouponEntity coupon = couponRepository.findByCodeAndDeletedAtIsNull(code).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+
+        coupon.softDelete();
+
+        couponRepository.save(coupon);
+    }
+
     private String normalizedCode(String code) {
         if (!code.matches("^[a-zA-Z0-9]+$")) {
             throw new IllegalArgumentException("Código inválido! Deve conter apenas letras e números.");

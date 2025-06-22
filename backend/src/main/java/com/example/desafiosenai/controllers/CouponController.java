@@ -39,5 +39,8 @@ public class CouponController {
     public void updateCouponByCode(@PathVariable String code){}
 
     @DeleteMapping("{code}")
-    public void deleteCoupon(@PathVariable String code){}
+    public ResponseEntity<Void> deleteCoupon(@PathVariable String code){
+        couponService.deleteCouponByCode(code);
+        return ResponseEntity.noContent().build();
+    }
 }
