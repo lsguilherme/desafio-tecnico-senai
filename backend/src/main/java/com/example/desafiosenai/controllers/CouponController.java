@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("coupons")
@@ -20,7 +21,10 @@ public class CouponController {
     }
 
     @GetMapping
-    public void findAllCoupons(){}
+    public ResponseEntity<List<CouponResponseDto>> findAllCoupons(){
+        List<CouponResponseDto> coupons = couponService.findAllCoupons();
+        return ResponseEntity.ok(coupons);
+    }
 
     @PostMapping
     public ResponseEntity<Void> createCoupon(@Valid @RequestBody CouponRequestDto couponRequestDto){

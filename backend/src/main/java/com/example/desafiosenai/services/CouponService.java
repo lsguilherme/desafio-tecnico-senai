@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 public class CouponService {
@@ -17,6 +18,10 @@ public class CouponService {
 
     public CouponService(CouponRepository couponRepository) {
         this.couponRepository = couponRepository;
+    }
+
+    public List<CouponResponseDto> findAllCoupons() {
+        return couponRepository.findAll().stream().map(CouponEntity::toDto).toList();
     }
 
     public CouponResponseDto createCoupon(CouponRequestDto couponRequestDto) {
