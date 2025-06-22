@@ -30,7 +30,10 @@ public class CouponController {
     }
 
     @GetMapping("{code}")
-    public void findCouponsByCode(@PathVariable String code){}
+    public ResponseEntity<CouponResponseDto> findCouponsByCode(@PathVariable String code){
+        CouponResponseDto coupon = couponService.findCouponByCode(code);
+        return ResponseEntity.ok(coupon);
+    }
 
     @PatchMapping("{code}")
     public void updateCouponByCode(@PathVariable String code){}

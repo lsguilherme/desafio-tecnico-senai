@@ -20,7 +20,7 @@ public class CouponService {
     }
 
     public CouponResponseDto createCoupon(CouponRequestDto couponRequestDto) {
-        String normalizedCode = couponRequestDto.code().toLowerCase();
+        String normalizedCode = normalizedCode(couponRequestDto.code());
 
         boolean existsCode = couponRepository.existsByCode(normalizedCode);
         if (existsCode) {
@@ -40,6 +40,22 @@ public class CouponService {
         var savedCoupon = couponRepository.save(coupon);
         return savedCoupon.toDto();
     }
+
+
+    public CouponResponseDto findCouponByCode(String code) {
+        String normalized = normalizedCode(code);
+        return couponRepository.findByCode(normalized)
+                .map(CouponEntity::toDto)
+                .orElseThrow(() -> new IllegalArgumentException("Cupom não encontrado"));
+    }
+
+    private String normalizedCode(String code) {
+        if (!code.matches("^[a-zA-Z0-9]+$")) {
+            throw new IllegalArgumentException("Código inválido! Deve conter apenas letras e números.");
+        }
+        return code.toLowerCase();
+    }
+
 
     private void validateCoupon(CouponRequestDto couponRequestDto) {
         validateDates(couponRequestDto.validFrom(), couponRequestDto.validUntil());
