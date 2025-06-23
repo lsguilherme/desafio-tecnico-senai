@@ -1,10 +1,15 @@
 package com.example.desafiosenai.entities;
 
+import com.example.desafiosenai.dtos.DiscountDto;
 import com.example.desafiosenai.dtos.responses.ProductResponseDto;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Entity
 @Table(name = "products")
@@ -26,13 +31,15 @@ public class ProductEntity extends AbstractBaseEntity {
     @Column(nullable = false)
     private Integer stock;
 
-    @OneToMany(mappedBy = "product")
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductCouponApplicationEntity> productCouponApplications;
 
     public ProductEntity() {
+        this.productCouponApplications = new ArrayList<>();
     }
 
     public ProductEntity(String name, String description, BigDecimal price, Integer stock) {
+        this();
         this.name = name;
         this.description = description;
         this.price = price;
@@ -87,13 +94,64 @@ public class ProductEntity extends AbstractBaseEntity {
         this.productCouponApplications = productCouponApplications;
     }
 
+
+    private Optional<ProductCouponApplicationEntity> getActiveCoupon() {
+        return this.productCouponApplications.stream()
+                .filter(pc -> pc.getRemovedAt() == null &&
+                        pc.getCoupon() != null &&
+                        pc.getCoupon().getValidFrom().isBefore(LocalDateTime.now()) &&
+                        pc.getCoupon().getValidUntil().isAfter(LocalDateTime.now()))
+                .findFirst();
+    }
+
+    private BigDecimal getFinalPrice() {
+        BigDecimal calculatedPrice = this.price;
+        Optional<ProductCouponApplicationEntity> activeApplication = getActiveCoupon();
+
+        if (activeApplication.isPresent()) {
+            CouponEntity coupon = activeApplication.get().getCoupon();
+            if (coupon.getType() == CouponType.PERCENT) {
+                BigDecimal discountPercentage = coupon.getDiscountValue().divide(BigDecimal.valueOf(100), MathContext.DECIMAL128);
+                calculatedPrice = this.price.multiply(BigDecimal.ONE.subtract(discountPercentage));
+            } else if (coupon.getType() == CouponType.FIXED) {
+                calculatedPrice = this.price.subtract(coupon.getDiscountValue());
+                if (calculatedPrice.compareTo(BigDecimal.ZERO) < 0) {
+                    calculatedPrice = BigDecimal.ZERO;
+                }
+            }
+        }
+        return calculatedPrice;
+    }
+
+    public DiscountDto getActiveDiscountDto() {
+        Optional<ProductCouponApplicationEntity> activeApplication = getActiveCoupon();
+        if (activeApplication.isPresent()) {
+            CouponEntity coupon = activeApplication.get().getCoupon();
+            return new DiscountDto(
+                    coupon.getType(),
+                    coupon.getDiscountValue(),
+                    activeApplication.get().getAppliedAt()
+            );
+        }
+        return null;
+    }
+
     public ProductResponseDto toDto() {
+        DiscountDto discount = getActiveDiscountDto();
+        BigDecimal finalPrice = getFinalPrice();
+        boolean hasCoupon = discount != null;
+        boolean isOutOfStock = this.stock <= 0;
+
         return new ProductResponseDto(
                 this.id,
                 this.name,
                 this.description,
                 this.stock,
+                isOutOfStock,
                 this.price,
+                finalPrice,
+                discount,
+                hasCoupon,
                 this.getCreatedAt(),
                 this.getUpdatedAt(),
                 this.getDeletedAt()

@@ -5,6 +5,7 @@ import com.example.desafiosenai.dtos.responses.CouponResponseDto;
 import com.example.desafiosenai.entities.CouponEntity;
 import com.example.desafiosenai.entities.CouponType;
 import com.example.desafiosenai.repositories.CouponRepository;
+import com.example.desafiosenai.utils.CodeNormalizer;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -15,9 +16,11 @@ import java.util.List;
 @Service
 public class CouponService {
     private final CouponRepository couponRepository;
+    private final CodeNormalizer codeNormalizer;
 
-    public CouponService(CouponRepository couponRepository) {
+    public CouponService(CouponRepository couponRepository, CodeNormalizer codeNormalizer) {
         this.couponRepository = couponRepository;
+        this.codeNormalizer = codeNormalizer;
     }
 
     public List<CouponResponseDto> findAllCoupons() {
@@ -25,12 +28,14 @@ public class CouponService {
     }
 
     public CouponResponseDto createCoupon(CouponRequestDto couponRequestDto) {
-        String normalizedCode = normalizedCode(couponRequestDto.code());
+        String normalizedCode = codeNormalizer.normalizedCode(couponRequestDto.code());
 
         boolean existsCode = couponRepository.existsByCode(normalizedCode);
+
         if (existsCode) {
             throw new IllegalArgumentException("O cupom já existe.");
         }
+
         validateCoupon(couponRequestDto);
 
         CouponEntity coupon = new CouponEntity();
@@ -48,7 +53,7 @@ public class CouponService {
 
 
     public CouponResponseDto findCouponByCode(String code) {
-        String normalized = normalizedCode(code);
+        String normalized = codeNormalizer.normalizedCode(code);
         return couponRepository.findByCode(normalized)
                 .map(CouponEntity::toDto)
                 .orElseThrow(() -> new IllegalArgumentException("Cupom não encontrado"));
@@ -61,14 +66,6 @@ public class CouponService {
 
         couponRepository.save(coupon);
     }
-
-    private String normalizedCode(String code) {
-        if (!code.matches("^[a-zA-Z0-9]+$")) {
-            throw new IllegalArgumentException("Código inválido! Deve conter apenas letras e números.");
-        }
-        return code.toLowerCase();
-    }
-
 
     private void validateCoupon(CouponRequestDto couponRequestDto) {
         validateDates(couponRequestDto.validFrom(), couponRequestDto.validUntil());

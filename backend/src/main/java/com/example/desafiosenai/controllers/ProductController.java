@@ -4,11 +4,11 @@ import com.example.desafiosenai.dtos.requests.ProductRequestDto;
 import com.example.desafiosenai.dtos.responses.ProductResponseDto;
 import com.example.desafiosenai.services.ProductService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.Map;
 
 
 @RestController
@@ -59,7 +59,11 @@ public class ProductController {
     }
 
     @PostMapping("{id}/discount/coupon")
-    public void discountCouponProduct(@PathVariable Integer id) {
+    public ResponseEntity<ProductResponseDto> discountCouponProduct(@PathVariable Integer id, @RequestBody Map<String, String> body) {
+        String code = body.get("code");
+
+        ProductResponseDto product = productService.applyCouponToProduct(id, code);
+        return ResponseEntity.ok(product);
     }
 
     @DeleteMapping("{id}/discount")
