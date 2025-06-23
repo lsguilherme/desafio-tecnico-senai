@@ -12,6 +12,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 
 @Service
@@ -106,5 +107,22 @@ public class ProductService {
         }
 
         return productRepository.save(product).toDto();
+    }
+
+    @Transactional
+    public void removeDiscountFromProduct(Integer id) {
+        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+        Optional<ProductCouponApplicationEntity> activeCoupon = product.getProductCouponApplications().stream()
+                .filter(pc -> pc.getRemovedAt() == null)
+                .findFirst();
+
+        if (activeCoupon.isEmpty()) {
+            throw new IllegalArgumentException("Nenhum desconto ativo para esse produto.");
+        }
+
+        ProductCouponApplicationEntity appliedCoupon = activeCoupon.get();
+        appliedCoupon.setRemovedAt(LocalDateTime.now());
+
+        productRepository.save(product);
     }
 }

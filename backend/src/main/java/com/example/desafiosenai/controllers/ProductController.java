@@ -67,7 +67,9 @@ public class ProductController {
     }
 
     @DeleteMapping("{id}/discount")
-    public void deleteDiscount(@PathVariable Integer id) {
+    public ResponseEntity<Void> deleteDiscount(@PathVariable Integer id) {
+        productService.removeDiscountFromProduct(id);
+        return ResponseEntity.noContent().build();
     }
 
 }
