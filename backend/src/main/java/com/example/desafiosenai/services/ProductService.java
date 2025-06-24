@@ -1,6 +1,7 @@
 package com.example.desafiosenai.services;
 
 import com.example.desafiosenai.dtos.requests.ProductRequestDto;
+import com.example.desafiosenai.dtos.responses.PagedResponseDto;
 import com.example.desafiosenai.dtos.responses.ProductResponseDto;
 import com.example.desafiosenai.entities.CouponEntity;
 import com.example.desafiosenai.entities.CouponType;
@@ -9,12 +10,22 @@ import com.example.desafiosenai.entities.ProductEntity;
 import com.example.desafiosenai.repositories.CouponRepository;
 import com.example.desafiosenai.repositories.ProductRepository;
 import com.example.desafiosenai.utils.CodeNormalizer;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -183,5 +194,75 @@ public class ProductService {
         }
 
         return productRepository.save(product).toDto();
+    }
+
+    public PagedResponseDto<ProductResponseDto> findAllProducts(int page, int limit, String search, BigDecimal minPrice, BigDecimal maxPrice, Boolean hasDiscount, String sortBy, String sortOrder, Boolean includeDeleted, Boolean onlyOutOfStock) {
+        Sort sort = Sort.by(Sort.Direction.fromString(sortOrder), sortBy);
+        Pageable pageable = PageRequest.of(page, limit, sort);
+
+        Specification<ProductEntity> spec = Specification.allOf();
+
+        if (search != null && !search.trim().isEmpty()) {
+            String lowerSearch = search.toLowerCase();
+            spec = spec.and(((root, query, criteriaBuilder) ->
+                    criteriaBuilder.or(
+                            criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), "%" + lowerSearch + "%"))));
+        }
+
+        if (minPrice != null) {
+            spec = spec.and(((root, query, criteriaBuilder) ->
+                    criteriaBuilder.greaterThanOrEqualTo(root.get("price"), minPrice)));
+        }
+
+        if (maxPrice != null) {
+            spec = spec.and(((root, query, criteriaBuilder) ->
+                    criteriaBuilder.lessThanOrEqualTo(root.get("price"), maxPrice)));
+        }
+
+        if (Boolean.FALSE.equals(includeDeleted)) {
+            spec = spec.and(((root, query, criteriaBuilder) ->
+                    criteriaBuilder.isNull(root.get("deletedAt"))));
+        }
+
+        if (Boolean.TRUE.equals(onlyOutOfStock)) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.lessThanOrEqualTo(root.get("stock"), 0)
+            );
+        }
+
+        if (hasDiscount != null) {
+            spec = spec.and(((root, query, criteriaBuilder) -> {
+                Join<ProductEntity, ProductCouponApplicationEntity> productJoin = root.join("productCouponApplications", JoinType.LEFT);
+                Join<ProductCouponApplicationEntity, CouponEntity> couponJoin = productJoin.join("coupon", JoinType.LEFT);
+
+                Predicate activeDiscount = criteriaBuilder.and(
+                        criteriaBuilder.isNull(productJoin.get("removedAt")),
+                        criteriaBuilder.isNull(couponJoin.get("deletedAt")),
+                        criteriaBuilder.lessThanOrEqualTo(couponJoin.get("validFrom"), LocalDateTime.now()),
+                        criteriaBuilder.greaterThanOrEqualTo(couponJoin.get("validUntil"), LocalDateTime.now())
+                );
+
+                if (Boolean.TRUE.equals(hasDiscount)) {
+                    return activeDiscount;
+                } else {
+                    return criteriaBuilder.not(activeDiscount);
+                }
+            }));
+        }
+
+        Page<ProductEntity> productPage = productRepository.findAll(spec, pageable);
+
+        List<ProductResponseDto> content = productPage.getContent().stream()
+                .map(ProductEntity::toDto)
+                .collect(Collectors.toList());
+
+        return new PagedResponseDto<>(
+                content, new PagedResponseDto.Meta(
+                productPage.getNumber(),
+                productPage.getSize(),
+                productPage.getTotalPages(),
+                productPage.getNumberOfElements()
+            )
+        );
     }
 }

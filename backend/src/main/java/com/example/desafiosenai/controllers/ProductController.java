@@ -1,6 +1,7 @@
 package com.example.desafiosenai.controllers;
 
 import com.example.desafiosenai.dtos.requests.ProductRequestDto;
+import com.example.desafiosenai.dtos.responses.PagedResponseDto;
 import com.example.desafiosenai.dtos.responses.ProductResponseDto;
 import com.example.desafiosenai.services.ProductService;
 import jakarta.validation.Valid;
@@ -23,7 +24,21 @@ public class ProductController {
     }
 
     @GetMapping
-    public void findAllProducts() {
+    public ResponseEntity<PagedResponseDto<ProductResponseDto>> findAllProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Boolean hasDiscount,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "ASC") String sortOrder,
+            @RequestParam(defaultValue = "false") Boolean includeDeleted,
+            @RequestParam(defaultValue = "false") Boolean onlyOutOfStock
+
+    ) {
+        PagedResponseDto<ProductResponseDto> productsPage = productService.findAllProducts(page, limit, search, minPrice, maxPrice, hasDiscount, sortBy, sortOrder, includeDeleted, onlyOutOfStock);
+        return ResponseEntity.ok(productsPage);
     }
 
     @GetMapping("{id}")
