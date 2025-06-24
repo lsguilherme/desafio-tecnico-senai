@@ -3,6 +3,7 @@ package com.example.desafiosenai.services;
 import com.example.desafiosenai.dtos.requests.ProductRequestDto;
 import com.example.desafiosenai.dtos.responses.ProductResponseDto;
 import com.example.desafiosenai.entities.CouponEntity;
+import com.example.desafiosenai.entities.CouponType;
 import com.example.desafiosenai.entities.ProductCouponApplicationEntity;
 import com.example.desafiosenai.entities.ProductEntity;
 import com.example.desafiosenai.repositories.CouponRepository;
@@ -11,6 +12,7 @@ import com.example.desafiosenai.utils.CodeNormalizer;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -124,5 +126,62 @@ public class ProductService {
         appliedCoupon.setRemovedAt(LocalDateTime.now());
 
         productRepository.save(product);
+    }
+
+    @Transactional
+    public ProductResponseDto applyPercentDiscount(Integer id, BigDecimal percent) {
+        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+
+        if (percent.compareTo(BigDecimal.valueOf(1)) < 0 || percent.compareTo(BigDecimal.valueOf(80)) > 0) {
+            throw new IllegalArgumentException("O desconto percentual deve ser entre 1% e 80%.");
+        }
+
+        String couponCode = codeNormalizer.normalizedCode("PERCENTUAL" + id);
+        Optional<CouponEntity> existingCoupon = couponRepository.findByCode(couponCode);
+
+        CouponEntity coupon;
+        if (existingCoupon.isPresent()) {
+            coupon = existingCoupon.get();
+
+            if (coupon.getType() != CouponType.PERCENT) {
+                throw new IllegalArgumentException("Já existe um cupom de outro tipo aplicado a este produto. Remova-o antes de aplicar um desconto percentual.");
+            }
+
+            if (coupon.getDeletedAt() != null) {
+                coupon.restore();
+            }
+
+            coupon.setDiscountValue(percent);
+            coupon.setValidUntil(LocalDateTime.now().plusYears(5));
+        } else {
+            coupon = new CouponEntity();
+            coupon.setCode(couponCode);
+            coupon.setType(CouponType.PERCENT);
+            coupon.setDiscountValue(percent);
+            coupon.setOneShot(false);
+            coupon.setMaxUses(null);
+            coupon.setValidFrom(LocalDateTime.now());
+            coupon.setValidUntil(LocalDateTime.now().plusYears(5));
+        }
+
+        couponRepository.save(coupon);
+
+        product.getProductCouponApplications().stream()
+                .filter(pc -> pc.getRemovedAt() == null && !pc.getCoupon().equals(coupon))
+                .forEach(pc -> pc.setRemovedAt(LocalDateTime.now()));
+
+        boolean isCouponAlreadyApplied = product.getProductCouponApplications().stream()
+                .anyMatch(pc -> pc.getCoupon().equals(coupon) && pc.getRemovedAt() == null);
+
+        if (!isCouponAlreadyApplied) {
+            ProductCouponApplicationEntity application = new ProductCouponApplicationEntity();
+            application.setProduct(product);
+            application.setCoupon(coupon);
+            application.setAppliedAt(LocalDateTime.now());
+            product.getProductCouponApplications().add(application);
+        }
+
+        return productRepository.save(product).toDto();
     }
 }

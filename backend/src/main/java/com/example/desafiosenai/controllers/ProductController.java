@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Map;
 
@@ -55,7 +56,11 @@ public class ProductController {
     }
 
     @PostMapping("{id}/discount/percent")
-    public void discountPercentProduct(@PathVariable Integer id) {
+    public ResponseEntity<ProductResponseDto> discountPercentProduct(@PathVariable Integer id, @RequestBody Map<String, BigDecimal> body) {
+        BigDecimal percent = body.get("percent");
+
+        ProductResponseDto product = productService.applyPercentDiscount(id, percent);
+        return ResponseEntity.ok(product);
     }
 
     @PostMapping("{id}/discount/coupon")
