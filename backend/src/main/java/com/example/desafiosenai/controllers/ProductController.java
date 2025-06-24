@@ -4,6 +4,7 @@ import com.example.desafiosenai.dtos.requests.ProductRequestDto;
 import com.example.desafiosenai.dtos.responses.PagedResponseDto;
 import com.example.desafiosenai.dtos.responses.ProductResponseDto;
 import com.example.desafiosenai.services.ProductService;
+import com.github.fge.jsonpatch.JsonPatch;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -54,8 +55,10 @@ public class ProductController {
         return ResponseEntity.created(location).build();
     }
 
-    @PatchMapping("{id}")
-    public void updateProductById(@PathVariable Integer id) {
+    @PatchMapping(path = "{id}", consumes = "application/json-patch+json")
+    public ResponseEntity<ProductResponseDto> updateProductById(@PathVariable Integer id, @RequestBody JsonPatch patch) {
+        ProductResponseDto product = productService.updateProduct(id, patch);
+        return ResponseEntity.ok(product);
     }
 
     @DeleteMapping("{id}")

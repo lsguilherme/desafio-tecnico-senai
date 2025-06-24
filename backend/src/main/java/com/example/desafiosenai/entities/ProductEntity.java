@@ -2,6 +2,7 @@ package com.example.desafiosenai.entities;
 
 import com.example.desafiosenai.dtos.DiscountDto;
 import com.example.desafiosenai.dtos.responses.ProductResponseDto;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -31,6 +32,7 @@ public class ProductEntity extends AbstractBaseEntity {
     @Column(nullable = false)
     private Integer stock;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductCouponApplicationEntity> productCouponApplications;
 

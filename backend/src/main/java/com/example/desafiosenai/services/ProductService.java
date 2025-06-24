@@ -10,6 +10,11 @@ import com.example.desafiosenai.entities.ProductEntity;
 import com.example.desafiosenai.repositories.CouponRepository;
 import com.example.desafiosenai.repositories.ProductRepository;
 import com.example.desafiosenai.utils.CodeNormalizer;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonpatch.JsonPatch;
+import com.github.fge.jsonpatch.JsonPatchException;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -21,6 +26,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,11 +39,13 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CouponRepository couponRepository;
     private final CodeNormalizer codeNormalizer;
+    private final ObjectMapper objectMapper;
 
-    public ProductService(ProductRepository productRepository, CouponRepository couponRepository, CodeNormalizer codeNormalizer) {
+    public ProductService(ProductRepository productRepository, CouponRepository couponRepository, CodeNormalizer codeNormalizer, ObjectMapper objectMapper) {
         this.productRepository = productRepository;
         this.couponRepository = couponRepository;
         this.codeNormalizer = codeNormalizer;
+        this.objectMapper = objectMapper;
     }
 
     public ProductResponseDto saveProduct(ProductRequestDto productRequestDto) {
@@ -262,7 +270,37 @@ public class ProductService {
                 productPage.getSize(),
                 productPage.getTotalPages(),
                 productPage.getNumberOfElements()
-            )
+        )
         );
+    }
+
+    @Transactional
+    public ProductResponseDto updateProduct(Integer id, JsonPatch patch) {
+        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+
+        try {
+            JsonNode productNode = objectMapper.valueToTree(product);
+
+            JsonNode patchedProductNode = patch.apply(productNode);
+
+            ProductEntity tempPatchedProduct = objectMapper.treeToValue(patchedProductNode, ProductEntity.class);
+
+            product.setName(tempPatchedProduct.getName());
+            product.setDescription(tempPatchedProduct.getDescription());
+            product.setPrice(tempPatchedProduct.getPrice());
+            product.setStock(tempPatchedProduct.getStock());
+
+            product.getProductCouponApplications().clear();
+            if (tempPatchedProduct.getProductCouponApplications() != null) {
+                for (ProductCouponApplicationEntity app : tempPatchedProduct.getProductCouponApplications()) {
+                    app.setProduct(product);
+                    product.getProductCouponApplications().add(app);
+                }
+            }
+
+            return productRepository.save(product).toDto();
+        } catch (JsonPatchException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
