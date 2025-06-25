@@ -1,5 +1,10 @@
 import type { JsonPatchOperation } from "@/types/json-patch";
-import { type ProductRequest, type ProductResponse } from "@/types/products";
+import {
+  type PagedResponse,
+  type ProductFilterParams,
+  type ProductRequest,
+  type ProductResponse,
+} from "@/types/products";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -61,5 +66,37 @@ export async function updateProduct(
 
 export async function getProductById(id: string): Promise<ProductResponse> {
   const response = await fetch(`${API_BASE_URL}/products/${id}`);
+  return handleResponse(response);
+}
+
+export async function deleteProduct(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+    method: "DELETE",
+  });
+
+  if (response.status === 204) {
+    return;
+  }
+
+  await handleResponse(response);
+}
+
+export async function getProducts(
+  params: ProductFilterParams = {}
+): Promise<PagedResponse<ProductResponse>> {
+  const queryParams = new URLSearchParams();
+  if (params.page !== undefined)
+    queryParams.append("page", params.page.toString());
+  if (params.limit !== undefined)
+    queryParams.append("limit", params.limit.toString());
+  if (params.search) queryParams.append("search", params.search);
+  if (params.minPrice)
+    queryParams.append("minPrice", params.minPrice.toString());
+  if (params.maxPrice)
+    queryParams.append("maxPrice", params.maxPrice.toString());
+
+  const response = await fetch(
+    `${API_BASE_URL}/products?${queryParams.toString()}`
+  );
   return handleResponse(response);
 }

@@ -25,3 +25,21 @@ export interface ProductResponse {
   updatedAt: string;
   deletedAt: string | null;
 }
+
+export interface PagedResponse<T> {
+  data: T[];
+  meta: {
+    page: number;
+    limit: number;
+    totalPages: number;
+    totalItems: number;
+  };
+}
+
+export interface ProductFilterParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  minPrice?: number | string;
+  maxPrice?: number | string;
+}
