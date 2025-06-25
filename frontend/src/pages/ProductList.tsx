@@ -213,7 +213,7 @@ export default function ProductList() {
                                             </span>
                                         </div>
                                         {product.discount && (
-                                            <div className="w-12 h-8 flex items-center justify-center rounded-xl bg-[#DCFCE7] text-[#158046]">
+                                            <div className="w-auto px-3 flex items-center justify-center rounded-lg bg-[#DCFCE7] text-[#158046]">
                                                 {product.discount.type === 'PERCENT' ? `${product.discount.value}%` : `R$ ${product.discount.value.toFixed(2).replace(".", ",")}`}
                                             </div>
                                         )}
