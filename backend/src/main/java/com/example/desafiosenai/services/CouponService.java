@@ -6,6 +6,12 @@ import com.example.desafiosenai.entities.CouponEntity;
 import com.example.desafiosenai.entities.CouponType;
 import com.example.desafiosenai.repositories.CouponRepository;
 import com.example.desafiosenai.utils.CodeNormalizer;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonpatch.JsonPatch;
+import com.github.fge.jsonpatch.JsonPatchException;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -17,10 +23,12 @@ import java.util.List;
 public class CouponService {
     private final CouponRepository couponRepository;
     private final CodeNormalizer codeNormalizer;
+    private final ObjectMapper objectMapper;
 
-    public CouponService(CouponRepository couponRepository, CodeNormalizer codeNormalizer) {
+    public CouponService(CouponRepository couponRepository, CodeNormalizer codeNormalizer, ObjectMapper objectMapper) {
         this.couponRepository = couponRepository;
         this.codeNormalizer = codeNormalizer;
+        this.objectMapper = objectMapper;
     }
 
     public List<CouponResponseDto> findAllCoupons() {
@@ -73,7 +81,13 @@ public class CouponService {
         validateValueByType(couponRequestDto.type(), couponRequestDto.discountValue());
     }
 
-    private void validateDates(LocalDateTime validFrom,  LocalDateTime validUntil) {
+    private void validateCouponEntity(CouponEntity couponEntity) {
+        validateDates(couponEntity.getValidFrom(), couponEntity.getValidUntil());
+        validateCouponUses(couponEntity.getOneShot(), couponEntity.getMaxUses());
+        validateValueByType(couponEntity.getType(), couponEntity.getDiscountValue());
+    }
+
+    private void validateDates(LocalDateTime validFrom, LocalDateTime validUntil) {
         if (validFrom.isAfter(validUntil)) {
             throw new IllegalArgumentException("O campo 'valid_until' deve ser posterior ao 'valid_from'.");
         }
@@ -102,11 +116,43 @@ public class CouponService {
                 throw new IllegalArgumentException("Cupom do tipo 'percent' deve ser entre 1 e 80 porcento.");
             }
         } else if (type == CouponType.FIXED) {
-            if(value.compareTo(BigDecimal.ZERO) <= 0){
+            if (value.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("Cupom do tipo 'fixed' deve ser maior que 0.");
             }
         } else {
             throw new IllegalArgumentException("Tipo de cupom inválido");
+        }
+    }
+
+    @Transactional
+    public CouponResponseDto updateCoupon(String code, JsonPatch patch) {
+        String normalizedCode = codeNormalizer.normalizedCode(code);
+        CouponEntity coupon = couponRepository.findByCode(normalizedCode)
+                .orElseThrow(() -> new IllegalArgumentException("Cupom não encontrado."));
+
+        try {
+            JsonNode couponNode = objectMapper.valueToTree(coupon);
+
+            JsonNode patchedCouponNode = patch.apply(couponNode);
+
+            CouponEntity tempPatchedCoupon = objectMapper.treeToValue(patchedCouponNode, CouponEntity.class);
+
+            coupon.setCode(tempPatchedCoupon.getCode());
+            coupon.setType(tempPatchedCoupon.getType());
+            coupon.setDiscountValue(tempPatchedCoupon.getDiscountValue());
+            coupon.setOneShot(tempPatchedCoupon.getOneShot());
+            coupon.setMaxUses(tempPatchedCoupon.getMaxUses());
+            coupon.setValidFrom(tempPatchedCoupon.getValidFrom());
+            coupon.setValidUntil(tempPatchedCoupon.getValidUntil());
+
+            System.out.println("CreatedAt depois do patch (em memória): " + coupon.getCreatedAt());
+
+            validateCouponEntity(coupon);
+
+            return couponRepository.save(coupon).toDto();
+
+        } catch (JsonPatchException | JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 }

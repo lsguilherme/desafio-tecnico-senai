@@ -3,6 +3,7 @@ package com.example.desafiosenai.controllers;
 import com.example.desafiosenai.dtos.requests.CouponRequestDto;
 import com.example.desafiosenai.dtos.responses.CouponResponseDto;
 import com.example.desafiosenai.services.CouponService;
+import com.github.fge.jsonpatch.JsonPatch;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -39,8 +40,11 @@ public class CouponController {
         return ResponseEntity.ok(coupon);
     }
 
-    @PatchMapping("{code}")
-    public void updateCouponByCode(@PathVariable String code){}
+    @PatchMapping(path = "{code}", consumes = "application/json-patch+json")
+    public ResponseEntity<CouponResponseDto> updateCouponByCode(@PathVariable String code, @RequestBody JsonPatch patch){
+        CouponResponseDto updatedCoupon = couponService.updateCoupon(code, patch);
+        return ResponseEntity.ok(updatedCoupon);
+    }
 
     @DeleteMapping("{code}")
     public ResponseEntity<Void> deleteCoupon(@PathVariable String code){
