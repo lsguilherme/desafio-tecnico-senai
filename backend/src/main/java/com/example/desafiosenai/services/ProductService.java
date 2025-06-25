@@ -7,6 +7,10 @@ import com.example.desafiosenai.entities.CouponEntity;
 import com.example.desafiosenai.entities.CouponType;
 import com.example.desafiosenai.entities.ProductCouponApplicationEntity;
 import com.example.desafiosenai.entities.ProductEntity;
+import com.example.desafiosenai.exceptions.BadRequestException;
+import com.example.desafiosenai.exceptions.ConflictException;
+import com.example.desafiosenai.exceptions.ResourceNotFoundException;
+import com.example.desafiosenai.exceptions.UnprocessableEntityException;
 import com.example.desafiosenai.repositories.CouponRepository;
 import com.example.desafiosenai.repositories.ProductRepository;
 import com.example.desafiosenai.utils.CodeNormalizer;
@@ -27,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -47,11 +52,12 @@ public class ProductService {
         this.objectMapper = objectMapper;
     }
 
+    @Transactional
     public ProductResponseDto saveProduct(ProductRequestDto productRequestDto) {
         String normalizedName = productRequestDto.name().replaceAll("\\s+", " ").trim();
 
         if (productRepository.findByName(normalizedName).isPresent()) {
-            throw new IllegalArgumentException("Já existe um produto com esse nome.");
+            throw new ConflictException("Já existe um produto com esse nome.");
         }
         ;
 
@@ -66,19 +72,23 @@ public class ProductService {
 
     }
 
+    @Transactional
     public void deleteProductById(Integer id) {
-        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() ->
+                new ResourceNotFoundException("Produto não encontrado."));
 
         product.softDelete();
 
         productRepository.save(product);
     }
 
+    @Transactional
     public ProductResponseDto restoreProductById(Integer id) {
-        ProductEntity product = productRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+        ProductEntity product = productRepository.findById(id).orElseThrow(() ->
+                new ResourceNotFoundException("Produto não encontrado."));
 
         if (product.getDeletedAt() == null) {
-            throw new IllegalArgumentException("Produto já está ativo.");
+            throw new BadRequestException("Produto já está ativo.");
         }
 
         product.restore();
@@ -87,29 +97,47 @@ public class ProductService {
     }
 
     public ProductResponseDto findProductById(Integer id) {
-        return productRepository.findById(id).map(ProductEntity::toDto).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+        return productRepository.findById(id).map(ProductEntity::toDto).orElseThrow(() ->
+                new ResourceNotFoundException("Produto não encontrado."));
     }
 
     @Transactional
     public ProductResponseDto applyCouponToProduct(Integer id, String code) {
-        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() ->
+                new ResourceNotFoundException("Produto não encontrado."));
 
         String normalizedCode = codeNormalizer.normalizedCode(code);
 
-        CouponEntity coupon = couponRepository.findByCodeAndDeletedAtIsNull(normalizedCode).orElseThrow(() -> new IllegalArgumentException("Cupom não encontrado ou inativo."));
+        CouponEntity coupon = couponRepository.findByCodeAndDeletedAtIsNull(normalizedCode).orElseThrow(() ->
+                new ResourceNotFoundException("Cupom não encontrado ou inativo."));
 
-        if (coupon.getValidFrom().isAfter(LocalDateTime.now()) || coupon.getValidUntil().isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Cupom fora da data de válidade.");
+        if (coupon.getValidFrom().isAfter(LocalDateTime.now())) {
+            throw new BadRequestException("Cupom ainda não está valido.");
+        }
+        if (coupon.getValidUntil().isBefore(LocalDateTime.now())){
+            throw new BadRequestException("Cupom expirado.");
         }
 
         if (coupon.getMaxUses() != null && coupon.getMaxUses() <= 0) {
-            throw new IllegalArgumentException("Este cupom não possui mais usos disponíveis.");
+            throw new ConflictException("Este cupom não possui mais usos disponíveis.");
         }
 
         boolean hasActiveCoupon = product.getProductCouponApplications().stream().anyMatch(pca -> pca.getRemovedAt() == null);
 
         if (hasActiveCoupon) {
-            throw new IllegalArgumentException("Já existe um cupom ativo para este produto.");
+            throw new ConflictException("Já existe um cupom ativo para este produto.");
+        }
+
+        BigDecimal finalPrice = product.getPrice();
+        if (coupon.getType() == CouponType.PERCENT) {
+            BigDecimal discountPercentage = coupon.getDiscountValue().divide(BigDecimal.valueOf(100), MathContext.DECIMAL128);
+            finalPrice = product.getPrice().multiply(BigDecimal.ONE.subtract(discountPercentage));
+        } else if (coupon.getType() == CouponType.FIXED) {
+            finalPrice = product.getPrice().subtract(coupon.getDiscountValue());
+        }
+
+        if (finalPrice.compareTo(new BigDecimal("0.01")) < 0) {
+            throw new UnprocessableEntityException("O desconto do cupom faz o preço final cair para menos de R$ 0,01.");
         }
 
         ProductCouponApplicationEntity productCoupon = new ProductCouponApplicationEntity();
@@ -131,13 +159,14 @@ public class ProductService {
 
     @Transactional
     public void removeDiscountFromProduct(Integer id) {
-        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() ->
+                new ResourceNotFoundException("Produto não encontrado."));
         Optional<ProductCouponApplicationEntity> activeCoupon = product.getProductCouponApplications().stream()
                 .filter(pc -> pc.getRemovedAt() == null)
                 .findFirst();
 
         if (activeCoupon.isEmpty()) {
-            throw new IllegalArgumentException("Nenhum desconto ativo para esse produto.");
+            throw new BadRequestException("Nenhum desconto ativo para esse produto.");
         }
 
         ProductCouponApplicationEntity appliedCoupon = activeCoupon.get();
@@ -148,11 +177,18 @@ public class ProductService {
 
     @Transactional
     public ProductResponseDto applyPercentDiscount(Integer id, BigDecimal percent) {
-        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() ->
+                new ResourceNotFoundException("Produto não encontrado."));
 
         if (percent.compareTo(BigDecimal.valueOf(1)) < 0 || percent.compareTo(BigDecimal.valueOf(80)) > 0) {
-            throw new IllegalArgumentException("O desconto percentual deve ser entre 1% e 80%.");
+            throw new BadRequestException("O desconto percentual deve ser entre 1% e 80%.");
+        }
+
+        BigDecimal discountPercentage = percent.divide(BigDecimal.valueOf(100), MathContext.DECIMAL128);
+        BigDecimal finalPrice = product.getPrice().multiply(BigDecimal.ONE.subtract(discountPercentage));
+
+        if (finalPrice.compareTo(new BigDecimal("0.01")) < 0) {
+            throw new UnprocessableEntityException("O desconto percentual faz o preço final cair para menos de R$ 0,01.");
         }
 
         String couponCode = codeNormalizer.normalizedCode("PERCENTUAL" + id);
@@ -163,7 +199,7 @@ public class ProductService {
             coupon = existingCoupon.get();
 
             if (coupon.getType() != CouponType.PERCENT) {
-                throw new IllegalArgumentException("Já existe um cupom de outro tipo aplicado a este produto. Remova-o antes de aplicar um desconto percentual.");
+                throw new ConflictException("Já existe um cupom de outro tipo aplicado a este produto. Remova-o antes de aplicar um desconto percentual.");
             }
 
             if (coupon.getDeletedAt() != null) {
@@ -275,7 +311,8 @@ public class ProductService {
 
     @Transactional
     public ProductResponseDto updateProduct(Integer id, JsonPatch patch) {
-        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
+        ProductEntity product = productRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() ->
+                new ResourceNotFoundException("Produto não encontrado."));
 
         try {
             JsonNode productNode = objectMapper.valueToTree(product);
@@ -283,6 +320,18 @@ public class ProductService {
             JsonNode patchedProductNode = patch.apply(productNode);
 
             ProductEntity tempPatchedProduct = objectMapper.treeToValue(patchedProductNode, ProductEntity.class);
+
+            if (tempPatchedProduct.getPrice().compareTo(BigDecimal.valueOf(0.01)) < 0 || tempPatchedProduct.getPrice().compareTo(BigDecimal.valueOf(1000000.00)) > 0) {
+                throw new BadRequestException("O preço deve ser entre 0.01 e 1.000.000,00.");
+            }
+            if (tempPatchedProduct.getStock() < 0 || tempPatchedProduct.getStock() > 999999) {
+                throw new BadRequestException("O estoque deve ser entre 0 e 999999.");
+            }
+            String normalizedName = tempPatchedProduct.getName().replaceAll("\\s+", " ").trim();
+
+            if (productRepository.findByName(normalizedName).isPresent() && !productRepository.findByName(normalizedName).get().getId().equals(id)) {
+                throw new ConflictException("Já existe um produto com esse nome.");
+            }
 
             product.setName(tempPatchedProduct.getName());
             product.setDescription(tempPatchedProduct.getDescription());
@@ -298,8 +347,10 @@ public class ProductService {
             }
 
             return productRepository.save(product).toDto();
-        } catch (JsonPatchException | IOException e) {
-            throw new RuntimeException(e);
+        } catch (JsonPatchException e) {
+            throw new BadRequestException("Formato de patch inválido: " + e.getMessage());
+        } catch (IOException e){
+            throw new RuntimeException("Erro ao processar patch: " + e.getMessage());
         }
     }
 }
