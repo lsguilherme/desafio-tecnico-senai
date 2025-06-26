@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lightbulb } from 'lucide-react';
 
 import {
     Dialog,
@@ -104,8 +103,8 @@ export default function DiscountModal({ isOpen, onClose, productId, onDiscountAp
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center">
-                        <Lightbulb className="mr-2 h-6 w-6 text-yellow-500" />
+                    <DialogTitle className="flex gap-2 items-center">
+                        <img src="/src/assets/icons/desconto.svg" alt="" />
                         Aplicar Desconto
                     </DialogTitle>
                     <DialogDescription>
@@ -127,6 +126,7 @@ export default function DiscountModal({ isOpen, onClose, productId, onDiscountAp
                         disabled={loading}
                         className="flex-1"
                     >
+                        <img className='size-4' src={discountType === "coupon" ? "/src/assets/icons/tag.svg" : "/src/assets/icons/desconto.svg"} />
                         Código Cupom
                     </Button>
                     <Button
@@ -135,6 +135,7 @@ export default function DiscountModal({ isOpen, onClose, productId, onDiscountAp
                         disabled={loading}
                         className="flex-1"
                     >
+                        <img className='size-4' src={discountType === "percent" ? "/src/assets/icons/percent-hover.svg" : "/src/assets/icons/percent.svg"} />
                         Percentual Direto
                     </Button>
                 </div>
