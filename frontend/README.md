@@ -42,20 +42,20 @@ Certifique-se de ter as seguintes ferramentas instaladas em sua máquina:
 
 ## Estrutura do Projeto
 
-```
 frontend/
 ├── public/ # Arquivos públicos (favicon, index.html, etc)
 ├── src/ # Código-fonte principal
 │ ├── assets/ # Imagens, ícones, fontes, etc
 │ ├── components/ # Componentes reutilizáveis
-│ ├── lib/ # Bibliotecas e utilitários compartilhados
-│ ├── pages/ # Páginas da aplicação
-│ ├── services/ # Consumo da API
-│ ├── types/ # Tipagens e interfaces TypeScript
-│ ├── App.tsx # Componente principal da aplicação
-│ ├── index.css # Estilos globais da aplicação
-│ ├── main.tsx # Ponto de entrada da aplicação React
-```
+│ │ ├── layout/ # Componentes para a estrutura geral do layout da aplicação (cabeçalhos, barras laterais).
+│ │ ├── modals/ # Modais específicos da aplicação, como formulários ou diálogos de confirmação.
+│ │ └── ui/ # Componentes de interface de usuário (UI) gerados e customizados via Shadcn UI.
+│ ├── lib/ # Bibliotecas e utilitários compartilhados de baixo nível, não específicos de uma entidade ou UI.
+│ ├── pages/ # Componentes React que representam as diferentes telas ou páginas da aplicação.
+│ ├── services/ # Módulos responsáveis por encapsular a lógica de comunicação com as APIs do backend.
+│ ├── types/ # Definições de interfaces e tipos TypeScript para a tipagem de dados da aplicação.
+│ └── (outros arquivos de configuração e entrada da aplicação na raiz de `src`, como `App.tsx`, `main.tsx`, `index.css`).
+├── (outros arquivos de configuração e metadados na raiz de `frontend`, como `.env.example`, `package
 
 ## Tecnologias Utilizadas
 
