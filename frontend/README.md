@@ -43,19 +43,32 @@ Certifique-se de ter as seguintes ferramentas instaladas em sua máquina:
 ## Estrutura do Projeto
 
 frontend/
-├── public/ # Arquivos públicos (favicon, index.html, etc)
-├── src/ # Código-fonte principal
-│ ├── assets/ # Imagens, ícones, fontes, etc
-│ ├── components/ # Componentes reutilizáveis
-│ │ ├── layout/ # Componentes para a estrutura geral do layout da aplicação (cabeçalhos, barras laterais).
-│ │ ├── modals/ # Modais específicos da aplicação, como formulários ou diálogos de confirmação.
-│ │ └── ui/ # Componentes de interface de usuário (UI) gerados e customizados via Shadcn UI.
-│ ├── lib/ # Bibliotecas e utilitários compartilhados de baixo nível, não específicos de uma entidade ou UI.
-│ ├── pages/ # Componentes React que representam as diferentes telas ou páginas da aplicação.
-│ ├── services/ # Módulos responsáveis por encapsular a lógica de comunicação com as APIs do backend.
-│ ├── types/ # Definições de interfaces e tipos TypeScript para a tipagem de dados da aplicação.
-│ └── (outros arquivos de configuração e entrada da aplicação na raiz de `src`, como `App.tsx`, `main.tsx`, `index.css`).
-├── (outros arquivos de configuração e metadados na raiz de `frontend`, como `.env.example`, `package
+├── public/
+├── src/
+│ ├── assets/
+│ ├── components/
+│ │ ├── layout/
+│ │ ├── modals/
+│ │ └── ui/
+│ ├── lib/
+│ ├── pages/
+│ ├── services/
+│ ├── types/
+
+- **/public:** Contém arquivos estáticos que são servidos diretamente pelo servidor web, como favicon.ico e o index.html principal.
+- **/src:** Contém o código-fonte principal da sua aplicação React.
+- **/assets:** Armazena imagens, ícones, fontes e outros recursos estáticos que são utilizados pelos componentes.
+- **/components:** Contém componentes React reutilizáveis que são utilizados em várias partes da aplicação.
+- **/layout:** Componentes para a estrutura geral do layout da aplicação (cabeçalhos, barras laterais, rodapés).
+- **/modals:** Modais específicos da aplicação, como formulários em modal ou diálogos de confirmação.
+- **/ui:** Componentes de interface de usuário (UI) gerados e customizados via Shadcn UI, como botões, inputs e diálogos.
+- **/lib:** Contém bibliotecas e utilitários compartilhados de baixo nível, que não são específicos de uma entidade ou da UI. Inclui, por exemplo, api.ts para funções de API e utils.ts para funções auxiliares gerais.
+- **/pages:** Contém componentes React que representam as diferentes telas ou páginas da aplicação, geralmente associadas a rotas específicas.
+- **/services:** Contém módulos responsáveis por encapsular a lógica de comunicação com as APIs do backend, como productService.ts e couponService.ts.
+- **/types:** Contém as definições de interfaces e tipos TypeScript para a tipagem de dados da aplicação, incluindo DTOs e outros modelos de dados.
+- **App.tsx:** O componente principal da aplicação, onde as rotas são definidas e os componentes de página são renderizados.
+- **index.css:** O arquivo de estilos CSS globais da aplicação, onde as diretivas do Tailwind CSS são importadas.
+- **main.tsx:** O ponto de entrada principal da aplicação React, responsável por renderizar o componente App.tsx no DOM.
 
 ## Tecnologias Utilizadas
 
