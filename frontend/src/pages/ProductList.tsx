@@ -13,7 +13,8 @@ import { useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import type { ProductResponse } from "@/types/products";
-import { getProducts } from "@/services/productService";
+import { getProducts, removeDiscountFromProduct } from "@/services/productService";
+import DiscountModal from "@/components/modals/DiscountModal";
 
 export default function ProductList() {
     const navigate = useNavigate();
@@ -26,6 +27,9 @@ export default function ProductList() {
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const limit = 10;
+
+    const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+    const [selectedProductIdForDiscount, setSelectedProductIdForDiscount] = useState<number | null>(null);
 
     const isFilterActive =
         minPrice !== "" || maxPrice !== "" || searchTerm !== "";
@@ -67,13 +71,30 @@ export default function ProductList() {
         navigate(`/products/edit/${product.id}`, { state: { product } });
     };
 
-    /* const handleDeleteProduct = (id: string) => {
-        console.log(`Deletar produto com ID: ${id}`);
+    const handleDiscountProduct = (productId: number) => {
+        setSelectedProductIdForDiscount(productId);
+        setIsDiscountModalOpen(true);
     };
 
-    const handleDiscountProduct = (id: string) => {
-        console.log(`Vender produto com ID: ${id}`);
-    }; */
+    const handleRemoveDiscount = async (productId: number) => {
+        if (window.confirm("Tem certeza que deseja remover o desconto ativo deste produto?")) {
+            setLoading(true);
+            setError(null);
+            try {
+                await removeDiscountFromProduct(productId);
+                fetchProducts();
+            } catch (err: unknown) {
+                console.error("Erro ao remover desconto:", err);
+                if (err instanceof Error) {
+                    setError(`Erro ao remover desconto: ${err.message}`);
+                } else {
+                    setError('Ocorreu um erro desconhecido ao remover o desconto.');
+                }
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
 
     const handleFilter = () => {
         setPage(0);
@@ -86,6 +107,15 @@ export default function ProductList() {
         setSearchTerm("");
         setPage(0);
         fetchProducts();
+    };
+
+    const onDiscountApplied = () => {
+        fetchProducts();
+    };
+
+    const handleCloseDiscountModal = () => {
+        setIsDiscountModalOpen(false);
+        setSelectedProductIdForDiscount(null);
     };
 
     if (loading && products.length === 0 && !isFilterActive) {
@@ -232,7 +262,7 @@ export default function ProductList() {
                                                 variant="ghost"
                                                 size="icon"
                                                 className="h-8 w-8 text-gray-500 hover:text-green-600"
-                                                // onClick={() => handleDiscountProduct()}
+                                                onClick={() => handleDiscountProduct(product.id)}
                                                 disabled={loading}
                                             >
                                                 <DollarSign className="h-4 w-4" />
@@ -242,7 +272,7 @@ export default function ProductList() {
                                                 variant="ghost"
                                                 size="icon"
                                                 className="h-8 w-8 text-gray-500 hover:text-red-600"
-                                                // onClick={() => handleDeleteProduct()}
+                                                onClick={() => handleRemoveDiscount(product.id)}
                                                 disabled={loading}
                                             >
                                                 <Trash2 className="h-4 w-4" />
@@ -266,6 +296,12 @@ export default function ProductList() {
                     </Button>
                 </div>
             )}
+            <DiscountModal
+                isOpen={isDiscountModalOpen}
+                onClose={handleCloseDiscountModal}
+                productId={selectedProductIdForDiscount}
+                onDiscountApplied={onDiscountApplied}
+            />
         </main>
     );
 }

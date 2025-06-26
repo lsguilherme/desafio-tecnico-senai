@@ -1,3 +1,4 @@
+import { handleResponse } from "@/lib/api";
 import type { JsonPatchOperation } from "@/types/json-patch";
 import {
   type PagedResponse,
@@ -7,35 +8,6 @@ import {
 } from "@/types/products";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(
-      errorData.message || `API request failed with status ${response.status}`
-    );
-  }
-
-  const contentType = response.headers.get("content-type");
-  const contentLength = response.headers.get("content-length");
-
-  if (
-    response.status === 204 ||
-    (contentLength !== null && parseInt(contentLength) === 0)
-  ) {
-    return {} as T;
-  }
-
-  if (!contentType || !contentType.includes("application/json")) {
-    console.warn(
-      `[handleResponse] Resposta com sucesso (status ${
-        response.status
-      }) mas Content-Type não é JSON: ${contentType || "nenhum"}.`
-    );
-    return {} as T;
-  }
-  return response.json();
-}
 
 export async function createProduct(
   productData: ProductRequest
@@ -109,4 +81,46 @@ export async function restoreProduct(id: string): Promise<ProductResponse> {
     },
   });
   return handleResponse(response);
+}
+
+export async function applyPercentDiscount(
+  id: number,
+  percent: number
+): Promise<ProductResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/products/${id}/discount/percent`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ percent }),
+    }
+  );
+  return handleResponse(response);
+}
+
+export async function applyCouponToProduct(
+  id: number,
+  code: string
+): Promise<ProductResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/products/${id}/discount/coupon`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ code }),
+    }
+  );
+  return handleResponse(response);
+}
+
+export async function removeDiscountFromProduct(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/products/${id}/discount`, {
+    method: "DELETE",
+  });
+
+  await handleResponse(response);
 }
