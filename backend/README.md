@@ -1,6 +1,7 @@
 ### Execução Local
 
 1. **Clone o Repositório:**
+
 ```
 git clone https://github.com/lsguilherme/desafio-tecnico-senai.git
 cd desafio-tecnico-senai/backend
@@ -9,6 +10,7 @@ cd desafio-tecnico-senai/backend
 2. **Compilar e Rodar o Projeto:**
 
 Navegue até a pasta `backend` e execute o comando Maven Wrapper para rodar a aplicação Spring Boot:
+
 ```
 ./mvnw spring-boot:run
 ```
@@ -20,6 +22,7 @@ A aplicação será iniciada e estará acessível em `http://localhost:8080/api/
 
 A estrutura principal do projeto backend está organizada da seguinte forma:
 
+```
     backend/
     ├── src/
     │   └── main/
@@ -38,6 +41,7 @@ A estrutura principal do projeto backend está organizada da seguinte forma:
     │                       ├── services/
     │                       └── utils/
     ├── pom.xml
+```
 
 - **/config**: Contém classes de configuração da aplicação Spring, como a definição de prefixos de rota para os controladores.
 - **/controllers**: Responsável por expor os endpoints da API REST, lidando com as requisições HTTP.
