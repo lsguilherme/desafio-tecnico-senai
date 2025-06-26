@@ -42,6 +42,7 @@ Certifique-se de ter as seguintes ferramentas instaladas em sua máquina:
 
 ## Estrutura do Projeto
 
+```
 frontend/
 ├── public/ # Arquivos públicos (favicon, index.html, etc)
 ├── src/ # Código-fonte principal
@@ -54,6 +55,7 @@ frontend/
 │ ├── App.tsx # Componente principal da aplicação
 │ ├── index.css # Estilos globais da aplicação
 │ ├── main.tsx # Ponto de entrada da aplicação React
+```
 
 ## Tecnologias Utilizadas
 
