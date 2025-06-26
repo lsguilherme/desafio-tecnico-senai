@@ -100,3 +100,13 @@ export async function getProducts(
   );
   return handleResponse(response);
 }
+
+export async function restoreProduct(id: string): Promise<ProductResponse> {
+  const response = await fetch(`${API_BASE_URL}/products/${id}/restore`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  return handleResponse(response);
+}

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
-import { createProduct, getProductById, updateProduct } from "@/services/productService";
+import { createProduct, deleteProduct, getProductById, restoreProduct, updateProduct } from "@/services/productService";
 
 import { type ProductRequest, type ProductResponse } from "@/types/products";
 import type { JsonPatchOperation } from "@/types/json-patch";
@@ -81,8 +81,30 @@ export default function ProductForm() {
         setProductForm((prev) => ({ ...prev, category: value }));
     }; */
 
-    const handleSwitchChange = (checked: boolean) => {
+    const handleSwitchChange = async (checked: boolean) => {
         setProductForm((prev) => ({ ...prev, isActive: checked }));
+
+        if (isEditing && id) {
+            setLoading(true);
+            setError(null);
+            try {
+                if (checked) {
+                    await restoreProduct(id);
+                } else {
+                    await deleteProduct(parseInt(id));
+                    navigate("/products");
+                }
+            } catch (err: unknown) {
+                if (err instanceof Error) {
+                    setError(`Erro ao atualizar status: ${err.message}`);
+                } else {
+                    setError('Ocorreu um erro desconhecido ao atualizar o status do produto.');
+                }
+                setProductForm((prev) => ({ ...prev, isActive: !checked }));
+            } finally {
+                setLoading(false);
+            }
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {

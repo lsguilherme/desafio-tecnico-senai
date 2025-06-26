@@ -127,7 +127,6 @@ export default function ProductList() {
                             value={minPrice}
                             onChange={(e) => setMinPrice(e.target.value)}
                             className="bg-white py-6"
-                            disabled={loading}
                         />
                     </div>
 
@@ -140,7 +139,6 @@ export default function ProductList() {
                             value={maxPrice}
                             onChange={(e) => setMaxPrice(e.target.value)}
                             className="bg-white py-6"
-                            disabled={loading}
                         />
                     </div>
 
@@ -166,7 +164,6 @@ export default function ProductList() {
                             className="bg-white py-6"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            disabled={loading}
                         />
                     </div>
 
